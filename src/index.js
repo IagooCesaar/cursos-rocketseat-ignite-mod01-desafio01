@@ -23,6 +23,16 @@ app.post("/users", (request, response) => {
       .json({ error: "You must provide a valid name and username" });
   }
 
+  const usernameAlreadyExists = users.some(
+    (user) => user.username === username
+  );
+
+  if (usernameAlreadyExists) {
+    return response.status(400).json({
+      error: "Username already exists",
+    });
+  }
+
   users.push({
     id: uuidV4(),
     name,
