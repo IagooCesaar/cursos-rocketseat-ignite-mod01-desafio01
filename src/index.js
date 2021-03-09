@@ -29,6 +29,24 @@ function checksExistsUserAccount(request, response, next) {
   next();
 }
 
+function validateTodoData(request, response, next) {
+  const { title, deadline } = request.body;
+
+  if (!title || !deadline) {
+    return response.status(400).json({
+      error: "You must provide a valid title and deadline for a todo item",
+    });
+  }
+  const testDate = Date.parse(deadline);
+  if (isNaN(testDate)) {
+    return response.status(400).json({
+      error: "You must provide a valid date as deadline",
+    });
+  }
+
+  next();
+}
+
 app.post("/users", (request, response) => {
   const { name, username } = request.body;
 
@@ -63,36 +81,30 @@ app.get("/todos", checksExistsUserAccount, (request, response) => {
   response.status(200).json(user.todos);
 });
 
-app.post("/todos", checksExistsUserAccount, (request, response) => {
-  const { user } = request;
-  const { title, deadline } = request.body;
+app.post(
+  "/todos",
+  checksExistsUserAccount,
+  validateTodoData,
+  (request, response) => {
+    const { user } = request;
+    const { title, deadline } = request.body;
 
-  if (!title || !deadline) {
-    return response.status(400).json({
-      error: "You must provide a valid title and deadline for a todo item",
-    });
+    const newTodo = {
+      id: uuidV4(),
+      title,
+      done: false,
+      deadline: new Date(deadline),
+      created_at: new Date(),
+    };
+
+    user.todos.push(newTodo);
+    return response.status(201).send();
   }
-  const testDate = Date.parse(deadline);
-  if (isNaN(testDate)) {
-    return response.status(400).json({
-      error: "You must provide a valid date as deadline",
-    });
-  }
-
-  const newTodo = {
-    id: uuidV4(),
-    title,
-    done: false,
-    deadline: new Date(deadline),
-    created_at: new Date(),
-  };
-
-  user.todos.push(newTodo);
-  return response.status(201).send();
-});
+);
 
 app.put("/todos/:id", checksExistsUserAccount, (request, response) => {
-  // Complete aqui
+  const { user } = request;
+  const { id } = request.params;
 });
 
 app.patch("/todos/:id/done", checksExistsUserAccount, (request, response) => {
