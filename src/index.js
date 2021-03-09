@@ -47,6 +47,26 @@ function validateTodoData(request, response, next) {
   next();
 }
 
+function checksExistsUserTodoItem(request, response, next) {
+  const { user } = request;
+  const { id } = request.params;
+  if (!id) {
+    return response.status(400).json({
+      error: "You must provide a valid Todo's id",
+    });
+  }
+
+  const todo = user.todos.find((todo) => todo.id === id);
+  if (!todo) {
+    return response.status(400).json({
+      error: "Todo item not found",
+    });
+  }
+
+  request.todo = todo;
+  next();
+}
+
 app.post("/users", (request, response) => {
   const { name, username } = request.body;
 
@@ -102,10 +122,22 @@ app.post(
   }
 );
 
-app.put("/todos/:id", checksExistsUserAccount, (request, response) => {
-  const { user } = request;
-  const { id } = request.params;
-});
+app.put(
+  "/todos/:id",
+  checksExistsUserAccount,
+  validateTodoData,
+  checksExistsUserTodoItem,
+  (request, response) => {
+    const { todo } = request;
+    const { title, deadline } = request.body;
+
+    Object.assign(todo, {
+      title,
+      deadline: new Date(deadline),
+    });
+    return response.status(200).send();
+  }
+);
 
 app.patch("/todos/:id/done", checksExistsUserAccount, (request, response) => {
   // Complete aqui
